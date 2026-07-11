@@ -63,6 +63,10 @@ class BuyRequest(BaseModel):
     category: str
     return3Y: str
 
+class ChatRequest(BaseModel):
+    message: str
+    history: List[Dict[str, str]] = []
+
 # Helper Authentication functions
 def get_password_hash(password: str) -> str:
     # PBKDF2 style salted hashing
@@ -374,3 +378,29 @@ def analyze_news(news_id: int, user_id: int = Depends(get_current_user_id)):
         funds_pool
     )
     return report
+
+@app.post("/api/chat")
+def chat_ai(request: ChatRequest, user_id: int = Depends(get_current_user_id)):
+    user_msg = request.message.lower().strip()
+    
+    # Simple keyword-based local financial AI responder in Hinglish
+    response_text = "Mujhe aapka query mil gaya hai. Kripya mutual funds, investment duration (horizon), ya market risk ke baare mein specific pucho taaki main sahi advice de sakun!"
+    
+    if "sip" in user_msg or "systematic" in user_msg:
+        response_text = "SIP (Systematic Investment Plan) start karna wealth creation ke liye sabse best option hai. Isme aap har mahine chota amount (jaise Rs. 500 ya 1000) automatic invest kar sakte ho, jisse rupee cost averaging aur compounding ka benefit milta hai. Aap hamara 'SIP Calculator' use karke details simulate kar sakte ho!"
+    elif "small cap" in user_msg or "smallcap" in user_msg:
+        response_text = "Small Cap funds un companies mein invest karte hain jo growth stage mein hain. Inme returns bohot high ho sakte hain (3Y CAGR > 30% tak), lekin inme risk bhi 'Very High' hota hai. Agar aapka time horizon 5-7 saal se zyada hai, tabhi small cap mein invest karein."
+    elif "mid cap" in user_msg or "midcap" in user_msg:
+        response_text = "Mid Cap funds moderately established companies mein invest karte hain. Yeh large cap se zyada return aur small cap se kam volatility dete hain. 3 se 5 saal ke investment horizon ke liye yeh balanced aur badhiya option hote hain."
+    elif "large cap" in user_msg or "largecap" in user_msg or "bluechip" in user_msg:
+        response_text = "Large Cap/Bluechip funds desh ki top 100 companies mein invest karte hain. Yeh stable, low-to-moderate risk wale funds hain. Agar aapko safe growth chahiye aur portfolio safe rakhna hai, toh Large Cap index funds best choice hain."
+    elif "debt" in user_msg or "bond" in user_msg or "liquid" in user_msg:
+        response_text = "Debt funds fixed income securities aur corporate bonds mein invest karte hain. Inme risk bohot kam hota hai aur safe stable returns milte hain. Agar aap 1-3 saal ke liye invest karna chahte hain toh short term debt ya liquid funds sahi rahenge."
+    elif "hybrid" in user_msg or "balanced" in user_msg:
+        response_text = "Hybrid funds equity (shares) aur debt (bonds) dono ka mixture hote hain. Yeh automatic asset allocation maintain karte hain. Moderate risk profiles aur 3+ years horizon ke liye yeh best hybrid balance dete hain."
+    elif "risk" in user_msg or "khatra" in user_msg:
+        response_text = "Mutual funds mein investment market risk ke under aata hai. High return funds (jaise small cap) mein high risk hota hai, jabki debt aur arbitrage funds mein low risk hota hai. Aap fund cards par click karke 'AI Suitability' check kar sakte hain jo aapke profile ke hisab se bata dega ki risk lena chahiye ya nahi!"
+    elif "hello" in user_msg or "hi" in user_msg or "namaste" in user_msg or "helo" in user_msg:
+        response_text = "Namaste! Main aapka AI Financial Advisor is project mein hoon. Mujhse investment, SIP, mutual fund risk, large/mid/small cap allocation, ya market returns ke baare mein kuch bhi pucho, main simple Hinglish mein madad karunga!"
+        
+    return {"response": response_text}

@@ -69,6 +69,13 @@ function App() {
   const [compareId1, setCompareId1] = useState('');
   const [compareId2, setCompareId2] = useState('');
 
+  // Chatbox States
+  const [chatMessages, setChatMessages] = useState([
+    { sender: 'ai', text: 'Namaste! Main aapka AI financial advisor hoon. Mujhse investment plans, SIP, mutual funds, ya returns ke baare mein kuch bhi pucho!' }
+  ]);
+  const [chatInput, setChatInput] = useState('');
+  const [isChatTyping, setIsChatTyping] = useState(false);
+
   // Sync Live data states
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(new Date().toLocaleTimeString());
@@ -328,6 +335,37 @@ function App() {
     }
   };
 
+  const handleChatSubmit = async (e) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+    
+    const userMsg = chatInput;
+    setChatInput('');
+    setChatMessages(prev => [...prev, { sender: 'user', text: userMsg }]);
+    setIsChatTyping(true);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders
+        },
+        body: JSON.stringify({ message: userMsg })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setChatMessages(prev => [...prev, { sender: 'ai', text: data.response }]);
+      } else {
+        throw new Error();
+      }
+    } catch (err) {
+      setChatMessages(prev => [...prev, { sender: 'ai', text: 'Server offline hai ya connectivity issues hain. Kripya baad mein try karein!' }]);
+    } finally {
+      setIsChatTyping(false);
+    }
+  };
+
   // Dynamic portfolio valuations
   const portfolioSummary = useMemo(() => {
     let investedSum = 0;
@@ -466,6 +504,15 @@ function App() {
                 About Platform
               </button>
             </li>
+            <li>
+              <button 
+                className={`nav-link ${isPanelOpen && panelType === 'chat' ? 'active' : ''}`}
+                onClick={() => openPanel('chat')}
+                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                AI Chat 💬
+              </button>
+            </li>
           </ul>
         )}
 
@@ -588,7 +635,7 @@ function App() {
             <section className="explorer-section" id="explore">
               <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                 <div className="section-info">
-                  <h2>Interactive Fund Explorer</h2>
+                  <h2>Interactive Mutual Fund</h2>
                   <p>Invest in Indian Mutual Funds parsed directly from AMFI rates.</p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
@@ -955,6 +1002,7 @@ function App() {
               {panelType === 'riskAnalysis' && 'Gemini AI Risk Suitability'}
               {panelType === 'buy' && 'Invest in Mutual Fund'}
               {panelType === 'about' && 'About Platform'}
+              {panelType === 'chat' && 'AI Chatbot 💬'}
             </h2>
             <button className="panel-close-btn" onClick={() => setIsPanelOpen(false)}>
               &times;
@@ -1041,6 +1089,55 @@ function App() {
                   <p style={{ margin: 0, fontSize: '0.75rem' }}>Investment compound calculations handle karta hai, jisse dynamic graphs aur metrics easily estimate ho sakein.</p>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* PANEL TYPE: AI CHATBOX */}
+          {panelType === 'chat' && (
+            <div style={{ display: 'flex', flexDirection: 'column', height: '80vh', justifyContent: 'space-between' }}>
+              <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem', paddingRight: '0.5rem', marginBottom: '1rem' }}>
+                {chatMessages.map((msg, idx) => (
+                  <div 
+                    key={idx} 
+                    style={{ 
+                      alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+                      background: msg.sender === 'user' ? 'var(--color-accent)' : 'rgba(255, 255, 255, 0.03)',
+                      color: '#fff',
+                      padding: '0.8rem 1rem',
+                      borderRadius: msg.sender === 'user' ? '16px 16px 0 16px' : '16px 16px 16px 0',
+                      border: msg.sender === 'user' ? 'none' : '1px solid var(--color-border)',
+                      maxWidth: '85%',
+                      fontSize: '0.85rem',
+                      lineHeight: '1.4'
+                    }}
+                  >
+                    {msg.text}
+                  </div>
+                ))}
+                {isChatTyping && (
+                  <div style={{ alignSelf: 'flex-start', background: 'rgba(255, 255, 255, 0.03)', padding: '0.8rem 1rem', borderRadius: '16px 16px 16px 0', border: '1px solid var(--color-border)', color: 'var(--color-secondary)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div style={{ width: '6px', height: '6px', background: 'var(--color-secondary)', borderRadius: '50%', animation: 'pulse 0.8s infinite' }}></div>
+                    AI is thinking...
+                  </div>
+                )}
+              </div>
+
+              <form 
+                onSubmit={handleChatSubmit} 
+                style={{ display: 'flex', gap: '0.5rem', borderTop: '1px solid var(--color-border)', paddingTop: '1rem' }}
+              >
+                <input 
+                  type="text" 
+                  className="auth-input" 
+                  placeholder="Ask me something (e.g. what is SIP, best small cap)..."
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  style={{ flex: 1 }}
+                />
+                <button type="submit" className="btn btn-solid-orange" style={{ padding: '0 1.25rem', borderRadius: '12px' }}>
+                  Send
+                </button>
+              </form>
             </div>
           )}
 
