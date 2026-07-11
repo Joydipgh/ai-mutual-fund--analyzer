@@ -453,183 +453,203 @@ function App() {
 
   return (
     <div className="app-container">
-      {/* Navbar */}
-      <nav className="navbar">
-        <div className="nav-left" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <img src="/logo.jpg" alt="Logo" style={{ width: '32px', height: '32px', borderRadius: '6px', border: '1px solid var(--color-border)' }} />
-          <div className="logo" style={{ fontSize: '1.25rem' }}>
-            AI Mutual Fund Analyzer<span>.</span>
-          </div>
-          <div className="live-badge">
-            <span className="live-dot" style={{ backgroundColor: user ? '#22c55e' : '#ef4444' }}></span>
-            {user ? 'PORTAL ACTIVE' : 'LOCKED'}
-          </div>
-        </div>
-        
-        {user && (
-          <ul className="nav-menu">
-            <li>
-              <button 
-                className={`nav-link ${activeTab === 'explore' && (!isPanelOpen || panelType !== 'about') ? 'active' : ''}`}
-                onClick={() => { setActiveTab('explore'); setSearchQuery(''); setActiveCategory('All'); setIsPanelOpen(false); }}
-                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-              >
-                Home
-              </button>
-            </li>
-            <li>
-              <button 
-                className={`nav-link ${activeTab === 'portfolio' ? 'active' : ''}`}
-                onClick={() => { setActiveTab('portfolio'); setIsPanelOpen(false); }}
-                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-              >
-                My Portfolio
-              </button>
-            </li>
-            <li>
-              <button 
-                className={`nav-link ${activeTab === 'news' ? 'active' : ''}`}
-                onClick={() => { setActiveTab('news'); setIsPanelOpen(false); }}
-                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-              >
-                AI Signals News
-              </button>
-            </li>
-            <li>
-              <button 
-                className={`nav-link ${isPanelOpen && panelType === 'about' ? 'active' : ''}`}
-                onClick={() => openPanel('about')}
-                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-              >
-                About Platform
-              </button>
-            </li>
-            <li>
-              <button 
-                className={`nav-link ${isPanelOpen && panelType === 'chat' ? 'active' : ''}`}
-                onClick={() => openPanel('chat')}
-                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-              >
-                AI Chat 💬
-              </button>
-            </li>
-          </ul>
-        )}
-
-        <div className="nav-right">
-          {user ? (
-            <>
-              <button className="btn btn-outline-green" onClick={() => openPanel('compare')}>
-                Compare Funds
-              </button>
-              <button className="btn btn-solid-orange" onClick={() => openPanel('calculator')}>
-                SIP Calculator
-              </button>
-              <div className="auth-success-badge">
-                <div className="auth-avatar">{user.name[0].toUpperCase()}</div>
-                <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>{user.name}</span>
-                <a href="#logout" className="auth-link" style={{ fontSize: '0.7rem', marginLeft: '0.25rem', fontWeight: 700 }} onClick={(e) => { e.preventDefault(); handleLogout(); }}>Logout</a>
-              </div>
-            </>
-          ) : (
-            <span style={{ fontSize: '0.75rem', color: 'var(--color-secondary)' }}>Sign in to unlock analyzers</span>
-          )}
-        </div>
-      </nav>
-
-      {/* Stock Ticker */}
-      <div className="ticker-container">
-        <div className="ticker-track">
-          {tickerItems.map((item, idx) => (
-            <div className="ticker-item" key={idx}>
-              <span className="ticker-name">{item.name}</span>
-              <span className="ticker-value">{item.value}</span>
-              <span className={`ticker-change ${item.up ? 'up' : 'down'}`}>
-                {item.up ? '▲' : '▼'} {item.change}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* GATED WELCOME & SIGN IN SECTION */}
       {!user ? (
-        <section style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, padding: '4rem 1rem' }}>
-          <div className="auth-header" style={{ marginBottom: '3rem', maxWidth: '650px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-            <img src="/logo.jpg" alt="Logo" style={{ width: '80px', height: '80px', borderRadius: '16px', border: '2px solid var(--color-border)', marginBottom: '1.5rem', boxShadow: '0 8px 24px rgba(228, 110, 20, 0.15)' }} />
-            <h1 className="hero-title" style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>
-              Empower Your Wealth with<br />
-              <span>AI Mutual Fund Analyzer</span>
-            </h1>
-            <p className="auth-subtitle" style={{ fontSize: '1rem', lineHeight: '1.5' }}>
-              Dono real-time AMFI mutual fund data aur market news signals check karein. Portfolios ko manage karne aur risk evaluation report simple Hinglish mein pane ke liye login karein.
-            </p>
-          </div>
+        <>
+          {/* Guest Navbar */}
+          <nav className="navbar">
+            <div className="nav-left" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <img src="/logo.jpg" alt="Logo" style={{ width: '32px', height: '32px', borderRadius: '6px', border: '1px solid var(--color-border)' }} />
+              <div className="logo" style={{ fontSize: '1.25rem' }}>
+                AI Mutual Fund Analyzer<span>.</span>
+              </div>
+              <div className="live-badge">
+                <span className="live-dot" style={{ backgroundColor: '#ef4444' }}></span>
+                LOCKED
+              </div>
+            </div>
+            <div className="nav-right">
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-secondary)' }}>Sign in to unlock analyzers</span>
+            </div>
+          </nav>
 
-          <div className="auth-card" style={{ transform: 'scale(1)', margin: '0 auto' }}>
-            <div className="auth-tabs">
-              <button 
-                className={`auth-tab ${authMode === 'login' ? 'active' : ''}`}
-                onClick={() => { setAuthMode('login'); setAuthError(''); setAuthSuccess(''); }}
-              >
-                Sign In
-              </button>
-              <button 
-                className={`auth-tab ${authMode === 'signup' ? 'active' : ''}`}
-                onClick={() => { setAuthMode('signup'); setAuthError(''); setAuthSuccess(''); }}
-              >
-                Register Account
-              </button>
+          {/* Guest Welcome Banner & Auth Card */}
+          <section style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, padding: '4rem 1rem' }}>
+            <div className="auth-header" style={{ marginBottom: '3rem', maxWidth: '650px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+              <img src="/logo.jpg" alt="Logo" style={{ width: '80px', height: '80px', borderRadius: '16px', border: '2px solid var(--color-border)', marginBottom: '1.5rem', boxShadow: '0 8px 24px rgba(228, 110, 20, 0.15)' }} />
+              <h1 className="hero-title" style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>
+                Empower Your Wealth with<br />
+                <span>AI Mutual Fund Analyzer</span>
+              </h1>
+              <p className="auth-subtitle" style={{ fontSize: '1rem', lineHeight: '1.5' }}>
+                Dono real-time AMFI mutual fund data aur market news signals check karein. Portfolios ko manage karne aur risk evaluation report simple Hinglish mein pane ke liye login karein.
+              </p>
             </div>
 
-            {authSuccess && <div style={{ color: 'var(--color-success)', background: 'var(--color-success-bg)', border: '1px solid rgba(34,197,94,0.2)', padding: '0.75rem', borderRadius: '10px', fontSize: '0.75rem', textAlign: 'center', marginBottom: '1rem' }}>{authSuccess}</div>}
+            <div className="auth-card" style={{ transform: 'scale(1)', margin: '0 auto' }}>
+              <div className="auth-tabs">
+                <button 
+                  className={`auth-tab ${authMode === 'login' ? 'active' : ''}`}
+                  onClick={() => { setAuthMode('login'); setAuthError(''); setAuthSuccess(''); }}
+                >
+                  Sign In
+                </button>
+                <button 
+                  className={`auth-tab ${authMode === 'signup' ? 'active' : ''}`}
+                  onClick={() => { setAuthMode('signup'); setAuthError(''); setAuthSuccess(''); }}
+                >
+                  Register Account
+                </button>
+              </div>
 
-            <form className="auth-form" onSubmit={handleAuthSubmit}>
-              {authMode === 'signup' && (
+              {authSuccess && <div style={{ color: 'var(--color-success)', background: 'var(--color-success-bg)', border: '1px solid rgba(34,197,94,0.2)', padding: '0.75rem', borderRadius: '10px', fontSize: '0.75rem', textAlign: 'center', marginBottom: '1rem' }}>{authSuccess}</div>}
+
+              <form className="auth-form" onSubmit={handleAuthSubmit}>
+                {authMode === 'signup' && (
+                  <div className="auth-group">
+                    <label className="auth-label">Full Name</label>
+                    <input 
+                      type="text" 
+                      placeholder="Enter name" 
+                      className="auth-input"
+                      value={authName}
+                      onChange={(e) => setAuthName(e.target.value)}
+                    />
+                  </div>
+                )}
+
                 <div className="auth-group">
-                  <label className="auth-label">Full Name</label>
+                  <label className="auth-label">Email Address</label>
                   <input 
-                    type="text" 
-                    placeholder="Enter name" 
+                    type="email" 
+                    placeholder="name@email.com" 
                     className="auth-input"
-                    value={authName}
-                    onChange={(e) => setAuthName(e.target.value)}
+                    value={authEmail}
+                    onChange={(e) => setAuthEmail(e.target.value)}
                   />
                 </div>
-              )}
 
-              <div className="auth-group">
-                <label className="auth-label">Email Address</label>
-                <input 
-                  type="email" 
-                  placeholder="name@email.com" 
-                  className="auth-input"
-                  value={authEmail}
-                  onChange={(e) => setAuthEmail(e.target.value)}
-                />
-              </div>
+                <div className="auth-group">
+                  <label className="auth-label">Password</label>
+                  <input 
+                    type="password" 
+                    placeholder="••••••••" 
+                    className="auth-input"
+                    value={authPassword}
+                    onChange={(e) => setAuthPassword(e.target.value)}
+                  />
+                </div>
 
-              <div className="auth-group">
-                <label className="auth-label">Password</label>
-                <input 
-                  type="password" 
-                  placeholder="••••••••" 
-                  className="auth-input"
-                  value={authPassword}
-                  onChange={(e) => setAuthPassword(e.target.value)}
-                />
-              </div>
+                {authError && <div className="auth-error-msg">{authError}</div>}
 
-              {authError && <div className="auth-error-msg">{authError}</div>}
-
-              <button type="submit" className="btn btn-solid-orange" style={{ padding: '0.8rem', width: '100%', marginTop: '0.5rem' }}>
-                {authMode === 'login' ? 'Login' : 'Create Account'}
-              </button>
-            </form>
-          </div>
-        </section>
+                <button type="submit" className="btn btn-solid-orange" style={{ padding: '0.8rem', width: '100%', marginTop: '0.5rem' }}>
+                  {authMode === 'login' ? 'Login' : 'Create Account'}
+                </button>
+              </form>
+            </div>
+          </section>
+        </>
       ) : (
-        <>
+        <div className="dashboard-wrapper">
+          {/* Left Sidebar */}
+          <aside className="left-sidebar">
+            <div className="sidebar-top">
+              <div className="sidebar-logo">
+                <img src="/logo.jpg" alt="Logo" style={{ width: '36px', height: '36px', borderRadius: '8px', border: '1px solid var(--color-border)' }} />
+                <div className="sidebar-logo-text">
+                  AI Mutual Fund<span>.</span>
+                </div>
+              </div>
+
+              <ul className="sidebar-menu">
+                <li>
+                  <button 
+                    className={`sidebar-btn ${activeTab === 'explore' && (!isPanelOpen || (panelType !== 'about' && panelType !== 'chat')) ? 'active' : ''}`}
+                    onClick={() => { setActiveTab('explore'); setSearchQuery(''); setActiveCategory('All'); setIsPanelOpen(false); }}
+                  >
+                    <span>🏠</span> Home
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    className={`sidebar-btn ${activeTab === 'portfolio' ? 'active' : ''}`}
+                    onClick={() => { setActiveTab('portfolio'); setIsPanelOpen(false); }}
+                  >
+                    <span>💼</span> My Portfolio
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    className={`sidebar-btn ${activeTab === 'news' ? 'active' : ''}`}
+                    onClick={() => { setActiveTab('news'); setIsPanelOpen(false); }}
+                  >
+                    <span>📰</span> AI Signals News
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    className={`sidebar-btn ${isPanelOpen && panelType === 'about' ? 'active' : ''}`}
+                    onClick={() => openPanel('about')}
+                  >
+                    <span>ℹ️</span> About Platform
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    className={`sidebar-btn ${isPanelOpen && panelType === 'chat' ? 'active' : ''}`}
+                    onClick={() => openPanel('chat')}
+                  >
+                    <span>💬</span> AI Chatbot
+                  </button>
+                </li>
+                
+                {/* Utilities inside Sidebar */}
+                <li style={{ marginTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.03)', paddingTop: '1.5rem' }}>
+                  <button className="sidebar-btn" onClick={() => openPanel('compare')}>
+                    <span>⚖️</span> Compare Funds
+                  </button>
+                </li>
+                <li>
+                  <button className="sidebar-btn" onClick={() => openPanel('calculator')}>
+                    <span>📊</span> SIP Calculator
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            <div className="sidebar-bottom">
+              <div className="user-profile-widget">
+                <div className="auth-avatar">{user.name[0].toUpperCase()}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                  <span className="user-profile-name">{user.name}</span>
+                  <span style={{ fontSize: '0.65rem', color: 'var(--color-secondary)' }}>Premium Investor</span>
+                </div>
+              </div>
+              <button 
+                className="sidebar-btn" 
+                style={{ color: '#ef4444', border: '1px solid rgba(239,68,68,0.15)', background: 'rgba(239,68,68,0.05)', borderRadius: '10px', padding: '0.6rem 1rem', display: 'flex', justifyContent: 'center' }}
+                onClick={handleLogout}
+              >
+                <span>🚪</span> Logout Account
+              </button>
+            </div>
+          </aside>
+
+          {/* Main Viewport Content Area */}
+          <main className="main-content">
+            {/* Stock Ticker inside main content */}
+            <div className="ticker-container" style={{ margin: '-2rem -2rem 2rem -2rem', borderTop: 'none' }}>
+              <div className="ticker-track">
+                {tickerItems.map((item, idx) => (
+                  <div className="ticker-item" key={idx}>
+                    <span className="ticker-name">{item.name}</span>
+                    <span className="ticker-value">{item.value}</span>
+                    <span className={`ticker-change ${item.up ? 'up' : 'down'}`}>
+                      {item.up ? '▲' : '▼'} {item.change}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
           {/* TAB 1: MUTUAL FUND EXPLORER */}
           {activeTab === 'explore' && (
             <section className="explorer-section" id="explore">
@@ -986,7 +1006,8 @@ function App() {
               </div>
             </section>
           )}
-        </>
+          </main>
+        </div>
       )}
 
       {/* Side Slide-out Panel */}
