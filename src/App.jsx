@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+  import React, { useState, useMemo, useEffect } from 'react';
 
 const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
@@ -45,6 +45,18 @@ function App() {
   const [portfolio, setPortfolio] = useState([]);
   const [buyAmount, setBuyAmount] = useState(5000);
   const [isBuying, setIsBuying] = useState(false);
+
+  // Theme states
+  const [theme, setTheme] = useState(() => localStorage.getItem('app_theme') || 'dark');
+  
+  useEffect(() => {
+    if (theme === 'light') {
+      document.body.classList.add('light-theme');
+    } else {
+      document.body.classList.remove('light-theme');
+    }
+    localStorage.setItem('app_theme', theme);
+  }, [theme]);
 
   // AI Analysis specific states
   const [userAge, setUserAge] = useState(30);
@@ -475,7 +487,7 @@ function App() {
           {/* Guest Welcome Banner & Auth Card */}
           <section style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, padding: '4rem 1rem' }}>
             <div className="auth-header" style={{ marginBottom: '3rem', maxWidth: '650px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-              <img src="/logo.jpg" alt="Logo" style={{ width: '80px', height: '80px', borderRadius: '16px', border: '2px solid var(--color-border)', marginBottom: '1.5rem', boxShadow: '0 8px 24px rgba(228, 110, 20, 0.15)' }} />
+              <img src="/logo.jpg" alt="Logo" style={{ width: '80px', height: '80px', borderRadius: '16px', border: '2px solid var(--color-border)', marginBottom: '1.5rem', boxShadow: '0 8px 24px rgba(0, 176, 116, 0.15)' }} />
               <h1 className="hero-title" style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>
                 Empower Your Wealth with<br />
                 <span>AI Mutual Fund Analyzer</span>
@@ -541,7 +553,7 @@ function App() {
 
                 {authError && <div className="auth-error-msg">{authError}</div>}
 
-                <button type="submit" className="btn btn-solid-orange" style={{ padding: '0.8rem', width: '100%', marginTop: '0.5rem' }}>
+                <button type="submit" className="btn btn-solid-green" style={{ padding: '0.8rem', width: '100%', marginTop: '0.5rem' }}>
                   {authMode === 'login' ? 'Login' : 'Create Account'}
                 </button>
               </form>
@@ -610,6 +622,14 @@ function App() {
             </div>
 
             <div className="sidebar-bottom">
+              <button 
+                className="sidebar-btn"
+                onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}
+                style={{ marginBottom: '0.5rem', border: '1px solid var(--color-border)', borderRadius: '10px' }}
+              >
+                <span>{theme === 'light' ? '🌙' : '☀️'}</span> {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
+              </button>
+
               <div className="user-profile-widget">
                 <div className="auth-avatar">{user.name[0].toUpperCase()}</div>
                 <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -656,7 +676,7 @@ function App() {
                     Source: <strong style={{ color: 'var(--color-accent)' }}>AMFI Live Feed</strong> (Synced: {lastUpdated})
                   </span>
                   <button 
-                    className={`btn ${isRefreshing ? 'btn-outline-orange' : 'btn-solid-orange'}`}
+                    className={`btn ${isRefreshing ? 'btn-outline-green' : 'btn-solid-green'}`}
                     style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem', borderRadius: '8px' }}
                     onClick={() => fetchFunds(true)}
                     disabled={isRefreshing}
@@ -728,7 +748,7 @@ function App() {
                       
                       <div style={{ display: 'flex', gap: '0.4rem' }}>
                         <button 
-                          className="btn btn-solid-orange" 
+                          className="btn btn-solid-green" 
                           style={{ padding: '0.4rem 0.6rem', fontSize: '0.7rem', borderRadius: '8px' }}
                           onClick={() => openPanel('buy', fund)}
                         >
@@ -927,7 +947,7 @@ function App() {
                       <p style={{ fontSize: '0.8rem', color: 'var(--color-secondary)', lineHeight: '1.5', marginBottom: '1.25rem' }}>{news.content}</p>
                       
                       <button 
-                        className="btn btn-solid-orange" 
+                        className="btn btn-solid-green" 
                         style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', borderRadius: '8px', gap: '0.25rem' }}
                         onClick={() => runNewsAnalysis(news.id)}
                         disabled={isNewsAnalyzing && activeNewsId === news.id}
@@ -942,7 +962,7 @@ function App() {
                 <div style={{ position: 'sticky', top: '100px' }}>
                   {isNewsAnalyzing && (
                     <div style={{ background: 'var(--bg-card)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '2rem', textAlign: 'center' }}>
-                      <div style={{ width: '35px', height: '35px', border: '3px solid rgba(228,110,20,0.2)', borderTopColor: 'var(--color-accent)', borderRadius: '50%', animation: 'pulse 1s linear infinite', margin: '0 auto 1.5rem' }}></div>
+                      <div style={{ width: '35px', height: '35px', border: '3px solid rgba(0, 176, 116,0.2)', borderTopColor: 'var(--color-accent)', borderRadius: '50%', animation: 'pulse 1s linear infinite', margin: '0 auto 1.5rem' }}></div>
                       <h4 style={{ fontSize: '1rem', color: '#fff', marginBottom: '0.5rem' }}>Processing AI news analysis...</h4>
                       <p style={{ fontSize: '0.75rem', color: 'var(--color-secondary)' }}>Gemini is scanning tech, capex, and macro indices impact...</p>
                     </div>
@@ -1053,7 +1073,7 @@ function App() {
                     key={amt} 
                     type="button" 
                     className="btn" 
-                    style={{ flex: 1, padding: '0.4rem', fontSize: '0.75rem', background: buyAmount === amt ? 'rgba(228,110,20,0.15)' : 'rgba(255,255,255,0.03)', border: `1px solid ${buyAmount === amt ? 'var(--color-accent)' : 'var(--color-border)'}`, color: '#fff' }}
+                    style={{ flex: 1, padding: '0.4rem', fontSize: '0.75rem', background: buyAmount === amt ? 'rgba(0, 176, 116,0.15)' : 'rgba(255,255,255,0.03)', border: `1px solid ${buyAmount === amt ? 'var(--color-accent)' : 'var(--color-border)'}`, color: '#fff' }}
                     onClick={() => setBuyAmount(amt)}
                   >
                     +{formatCurrency(amt)}
@@ -1061,7 +1081,7 @@ function App() {
                 ))}
               </div>
 
-              <button type="submit" className="btn btn-solid-orange" style={{ padding: '0.8rem', fontSize: '0.9rem', marginTop: '1rem' }} disabled={isBuying}>
+              <button type="submit" className="btn btn-solid-green" style={{ padding: '0.8rem', fontSize: '0.9rem', marginTop: '1rem' }} disabled={isBuying}>
                 {isBuying ? 'Processing Purchase...' : 'Confirm & Purchase Holding'}
               </button>
             </form>
@@ -1111,7 +1131,7 @@ function App() {
                   onChange={(e) => setChatInput(e.target.value)}
                   style={{ flex: 1 }}
                 />
-                <button type="submit" className="btn btn-solid-orange" style={{ padding: '0 1.25rem', borderRadius: '12px' }}>
+                <button type="submit" className="btn btn-solid-green" style={{ padding: '0 1.25rem', borderRadius: '12px' }}>
                   Send
                 </button>
               </form>
@@ -1178,7 +1198,7 @@ function App() {
               </div>
 
               <button 
-                className="btn btn-solid-orange" 
+                className="btn btn-solid-green" 
                 style={{ width: '100%', padding: '0.8rem', fontSize: '0.9rem' }}
                 onClick={runAiRiskAnalysis}
                 disabled={isAnalyzing}
@@ -1189,7 +1209,7 @@ function App() {
               {/* Loader */}
               {isAnalyzing && (
                 <div style={{ textAlign: 'center', padding: '2rem' }}>
-                  <div style={{ width: '30px', height: '30px', border: '3px solid rgba(228,110,20,0.2)', borderTopColor: 'var(--color-accent)', borderRadius: '50%', animation: 'pulse 1s linear infinite', margin: '0 auto 1rem' }}></div>
+                  <div style={{ width: '30px', height: '30px', border: '3px solid rgba(0, 176, 116,0.2)', borderTopColor: 'var(--color-accent)', borderRadius: '50%', animation: 'pulse 1s linear infinite', margin: '0 auto 1rem' }}></div>
                   <span style={{ fontSize: '0.8rem', color: 'var(--color-secondary)' }}>Gemini is evaluating standard portfolio risks against your timeframe...</span>
                 </div>
               )}
@@ -1262,7 +1282,7 @@ function App() {
 
                   {/* Alternative Suggestions */}
                   {aiAnalysisResult.alternative_suggestion && (
-                    <div style={{ background: 'rgba(228, 110, 20, 0.03)', padding: '1rem', borderRadius: '8px', border: '1px dotted rgba(228, 110, 20, 0.3)' }}>
+                    <div style={{ background: 'rgba(0, 176, 116, 0.03)', padding: '1rem', borderRadius: '8px', border: '1px dotted rgba(0, 176, 116, 0.3)' }}>
                       <h5 style={{ fontSize: '0.75rem', color: 'var(--color-accent)', marginBottom: '0.25rem' }}>💡 AI Actionable Advice</h5>
                       <p style={{ fontSize: '0.75rem', color: 'var(--color-secondary)', lineHeight: '1.4' }}>{aiAnalysisResult.alternative_suggestion}</p>
                     </div>
@@ -1534,7 +1554,7 @@ function App() {
               )}
 
               <button 
-                className="btn btn-solid-orange compare-btn-action"
+                className="btn btn-solid-green compare-btn-action"
                 onClick={() => {
                   setCalcType('SIP');
                   const fund = selectedCompareFund1;
