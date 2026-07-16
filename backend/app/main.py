@@ -1,4 +1,5 @@
 import jwt
+import random
 import hashlib
 import secrets
 import requests
@@ -66,6 +67,14 @@ class BuyRequest(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     history: List[Dict[str, str]] = []
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    otp: str
+    new_password: str
 
 # Helper Authentication functions
 def get_password_hash(password: str) -> str:
@@ -158,6 +167,43 @@ def login(credentials: UserLogin):
             "email": user["email"]
         }
     }
+
+# Simulated OTP storage
+TEMP_OTPS = {}
+
+@app.post("/api/auth/forgot-password")
+def forgot_password(req: ForgotPasswordRequest):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM users WHERE email = ?", (req.email,))
+    user = cursor.fetchone()
+    conn.close()
+    
+    if not user:
+        raise HTTPException(status_code=444, detail="Email is not registered.")
+        
+    # Generate random 6 digit OTP
+    otp_code = str(random.randint(100000, 999999))
+    TEMP_OTPS[req.email] = otp_code
+    print(f"\n========================================\n[SIMULATED OTP SENT TO {req.email}]: {otp_code}\n========================================\n")
+    return {"status": "success", "message": "OTP has been simulated. Check your uvicorn console or use the returned code.", "otp": otp_code}
+
+@app.post("/api/auth/reset-password")
+def reset_password(req: ResetPasswordRequest):
+    if req.email not in TEMP_OTPS or TEMP_OTPS[req.email] != req.otp:
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP.")
+        
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    hashed_pwd = get_password_hash(req.new_password)
+    cursor.execute("UPDATE users SET password_hash = ? WHERE email = ?", (hashed_pwd, req.email))
+    conn.commit()
+    conn.close()
+    
+    # Remove verified OTP
+    del TEMP_OTPS[req.email]
+    return {"status": "success", "message": "Password reset successfully! You can now log in."}
+
 
 # 2. EXPLORER INDICES & FUNDS
 @app.get("/api/indices")

@@ -287,8 +287,8 @@ function buildPicks(filter = 'all') {
     <div class="pick-card" data-signal="${pick.signal}" onclick="openStockModal('${pick.sym}')">
       <div class="pick-card-top">
         <div class="pick-stock-info">
-          <h3>${pick.sym}</h3>
-          <span>${pick.name.substring(0, 28)}${pick.name.length > 28 ? '...' : ''}</span>
+          <h3 style="font-size: 1.22rem; font-weight: 800; color: var(--text-primary); line-height: 1.3;">${pick.name}</h3>
+          <span style="font-size: 0.72rem; color: var(--text-secondary); text-transform: uppercase;">Symbol: ${pick.sym}</span>
         </div>
         <span class="signal-badge signal-${pick.signal}">${signalLabel(pick.signal)}</span>
       </div>
@@ -306,12 +306,12 @@ function buildPicks(filter = 'all') {
           <div class="pick-metric-value" style="color: var(--positive)">+${pick.upside.toFixed(1)}%</div>
         </div>
         <div class="pick-metric">
-          <div class="pick-metric-label">P/E Ratio</div>
-          <div class="pick-metric-value">${pick.pe}x</div>
+          <div class="pick-metric-label">Exp. Ratio</div>
+          <div class="pick-metric-value">${pick.pe}%</div>
         </div>
         <div class="pick-metric">
-          <div class="pick-metric-label">Sector</div>
-          <div class="pick-metric-value">${pick.sector}</div>
+          <div class="pick-metric-label">Risk Profile</div>
+          <div class="pick-metric-value" style="text-transform: capitalize;">${pick.mcap === 'small' ? 'Low' : pick.mcap === 'mid' ? 'Moderate' : 'High'}</div>
         </div>
       </div>
       <div class="ai-score-bar">
@@ -323,6 +323,7 @@ function buildPicks(filter = 'all') {
           <div class="score-fill" style="width: ${pick.aiScore}%"></div>
         </div>
       </div>
+      <button class="btn-outline-green" style="width: 100%; margin-top: 14px; padding: 10px; font-size: 0.82rem; font-weight: 700; border-radius: var(--radius-sm);" onclick="event.stopPropagation(); openSuitabilityModal('${pick.sym}')">🤖 Check AI Suitability</button>
     </div>
   `).join('');
 
@@ -378,10 +379,19 @@ function buildConfidenceBars() {
 // SCREENER
 // ================================================================
 function runScreener() {
-  const mcap    = document.getElementById('filterMarketCap').value;
-  const sector  = document.getElementById('filterSector').value;
-  const pe      = document.getElementById('filterPE').value;
-  const signal  = document.getElementById('filterSignal').value;
+  const container = document.getElementById('screenerResults');
+  if (!container) return;
+
+  const mcapEl = document.getElementById('filterMarketCap');
+  const sectorEl = document.getElementById('filterSector');
+  const peEl = document.getElementById('filterPE');
+  const signalEl = document.getElementById('filterSignal');
+  if (!mcapEl || !sectorEl || !peEl || !signalEl) return;
+
+  const mcap    = mcapEl.value;
+  const sector  = sectorEl.value;
+  const pe      = peEl.value;
+  const signal  = signalEl.value;
 
   const sectorMap = { it: 'IT', banking: 'Banking', pharma: 'Pharma', auto: 'Auto', fmcg: 'FMCG', energy: 'Energy', finance:'Finance', retail:'Retail', metal:'Metal' };
   const targetSector = sectorMap[sector] || '';
@@ -395,8 +405,6 @@ function runScreener() {
     if (signal && d.signal !== signal) return false;
     return true;
   });
-
-  const container = document.getElementById('screenerResults');
 
   if (results.length === 0) {
     container.innerHTML = `<div class="screener-placeholder"><p>No stocks matched your filters. Try relaxing your criteria.</p></div>`;
@@ -450,18 +458,54 @@ function buildHeatmap() {
 function buildNews() {
   const container = document.getElementById('newsGrid');
   if (!container) return;
-  container.innerHTML = NEWS.map(n => `
-    <div class="news-card">
-      <div class="news-meta">
-        <span class="news-source">${n.source}</span>
-        <span class="news-time">${n.time}</span>
-        <span class="news-sentiment sentiment-${n.sentiment}">${n.sentiment.toUpperCase()}</span>
+  container.innerHTML = NEWS.map((n, idx) => `
+    <div class="news-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div class="news-meta">
+          <span class="news-source">${n.source}</span>
+          <span class="news-time">${n.time}</span>
+          <span class="news-sentiment sentiment-${n.sentiment}">${n.sentiment.toUpperCase()}</span>
+        </div>
+        <div class="news-headline" style="font-weight: 700; font-size: 0.98rem; margin: 8px 0; line-height: 1.4; color: var(--text-primary);">${n.headline}</div>
+        <div class="news-summary" style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 10px;">${n.summary}</div>
       </div>
-      <div class="news-headline">${n.headline}</div>
-      <div class="news-summary">${n.summary}</div>
-      <div class="news-tags">${n.tags.map(t => `<span class="news-tag">#${t}</span>`).join('')}</div>
+      <div style="display: flex; flex-direction: column; gap: 8px; margin-top: auto;">
+        <div class="news-tags">${n.tags.map(t => `<span class="news-tag">#${t}</span>`).join('')}</div>
+        <button class="btn-outline-green" style="padding: 6px 12px; font-size: 0.78rem; font-weight: 700; width: fit-content; border-radius: var(--radius-sm);" onclick="analyzeNewsImpact(${idx}, this)">📊 Analyze AI Impact</button>
+        <div id="news-impact-${idx}" style="display: none; margin-top: 8px; padding: 10px; border-radius: var(--radius-sm); font-size: 0.8rem; line-height: 1.5; background: rgba(0, 245, 160, 0.04); border: 1px dashed rgba(0, 245, 160, 0.25); color: var(--text-secondary);"></div>
+      </div>
     </div>
   `).join('');
+}
+
+window.analyzeNewsImpact = function(idx, btn) {
+  const newsItem = NEWS[idx];
+  if (!newsItem) return;
+  const impactDiv = document.getElementById(`news-impact-${idx}`);
+  if (!impactDiv) return;
+
+  if (impactDiv.style.display === 'block') {
+    impactDiv.style.display = 'none';
+    btn.textContent = '📊 Analyze AI Impact';
+    return;
+  }
+
+  const h = newsItem.headline.toLowerCase();
+  let analysis = "";
+
+  if (h.includes('rbi') || h.includes('rate') || h.includes('interest') || h.includes('repo')) {
+    analysis = "<strong>📈 AI Impact Analysis:</strong> RBI interest rate signals ke wajese Banking & Debt mutual funds me direct yield volatility ho sakti hai. Safe players ke liye Liquid and Short-term debt schemes me SIP continue rakhna steady option rahega.";
+  } else if (h.includes('gain') || h.includes('rally') || h.includes('high') || h.includes('surge') || h.includes('rise')) {
+    analysis = "<strong>🚀 AI Impact Analysis:</strong> Bullish momentum ke chalte equity mutual funds me net asset value (NAV) rise karega. Large cap funds moderate growth targets support karenge, jabki active mid/small caps higher returns reflect kar sakte hain.";
+  } else if (h.includes('fall') || h.includes('drop') || h.includes('slump') || h.includes('loss') || h.includes('down') || h.includes('crash')) {
+    analysis = "<strong>⚠️ AI Impact Analysis:</strong> Market corrections ke karan immediate equity NAVs down ho sakti hain. Par SIP investors ko is slip ka advantage lekar low NAV units accumulate karne chahiye. Safe holdings ke liye hybrid allocation optimize karein.";
+  } else {
+    analysis = "<strong>💡 AI Impact Analysis:</strong> Yeh financial movement macro-market sentiment ko balance karegi. Indian mutual fund schemes long-term investment horizon me stable CAGR yield provide karne ke liye structured hain.";
+  }
+
+  impactDiv.innerHTML = analysis;
+  impactDiv.style.display = 'block';
+  btn.textContent = 'Hide Impact Analysis';
 }
 
 // ================================================================
@@ -921,45 +965,49 @@ let authMode = 'login';
 function handleNavAuthClick() {
   const token = localStorage.getItem('auth_token');
   if (token) {
-    // Logout
     localStorage.removeItem('auth_token');
     localStorage.removeItem('auth_user');
-    document.getElementById('navAuthBtn').textContent = 'Get Started';
+    checkAuthStatus();
     alert('Logged out successfully!');
     portfolio.length = 0;
     renderPortfolio();
   } else {
-    // Open Auth Modal
-    openAuthModal();
+    checkAuthStatus();
   }
 }
 
-function openAuthModal() {
-  document.getElementById('authErrorMsg').style.display = 'none';
-  document.getElementById('authModal').classList.add('active');
-  document.body.style.overflow = 'hidden';
-}
-
-function closeAuthModal() {
-  document.getElementById('authModal').classList.remove('active');
-  document.body.style.overflow = '';
-}
+function openAuthModal() {}
+function closeAuthModal() {}
 
 function switchAuthMode(e) {
-  e.preventDefault();
+  if (e) e.preventDefault();
   const title = document.getElementById('authModalTitle');
   const nameGroup = document.getElementById('authNameGroup');
+  const emailGroup = document.getElementById('authEmailGroup');
+  const otpGroup = document.getElementById('authOtpGroup');
+  const passwordGroup = document.getElementById('authPasswordGroup');
+  const passwordLabel = document.getElementById('authPasswordLabel');
+  const forgotLink = document.getElementById('authForgotLink');
   const submitBtn = document.getElementById('authSubmitBtn');
   const switchText = document.getElementById('authSwitchText');
   const switchLink = document.getElementById('authSwitchLink');
-  
-  if (authMode === 'login') {
+  const errorEl = document.getElementById('authErrorMsg');
+
+  errorEl.style.display = 'none';
+  otpGroup.style.display = 'none';
+  emailGroup.style.display = 'block';
+  passwordGroup.style.display = 'block';
+  passwordLabel.textContent = 'Password';
+  forgotLink.style.display = 'block';
+
+  if (authMode === 'login' || authMode === 'forgot' || authMode === 'reset') {
     authMode = 'signup';
     title.textContent = 'Register Account';
     nameGroup.style.display = 'block';
     submitBtn.textContent = 'Register';
     switchText.textContent = 'Already have an account?';
     switchLink.textContent = 'Sign In';
+    forgotLink.style.display = 'none';
   } else {
     authMode = 'login';
     title.textContent = 'Sign In';
@@ -970,56 +1018,192 @@ function switchAuthMode(e) {
   }
 }
 
+function switchForgotPasswordMode(e) {
+  if (e) e.preventDefault();
+  const title = document.getElementById('authModalTitle');
+  const nameGroup = document.getElementById('authNameGroup');
+  const emailGroup = document.getElementById('authEmailGroup');
+  const otpGroup = document.getElementById('authOtpGroup');
+  const passwordGroup = document.getElementById('authPasswordGroup');
+  const passwordLabel = document.getElementById('authPasswordLabel');
+  const forgotLink = document.getElementById('authForgotLink');
+  const submitBtn = document.getElementById('authSubmitBtn');
+  const switchText = document.getElementById('authSwitchText');
+  const switchLink = document.getElementById('authSwitchLink');
+  const errorEl = document.getElementById('authErrorMsg');
+
+  errorEl.style.display = 'none';
+  nameGroup.style.display = 'none';
+
+  if (authMode === 'login') {
+    authMode = 'forgot';
+    title.textContent = 'Forgot Password';
+    otpGroup.style.display = 'none';
+    passwordGroup.style.display = 'none';
+    submitBtn.textContent = 'Send OTP';
+    switchText.textContent = 'Remembered password?';
+    switchLink.textContent = 'Sign In';
+    forgotLink.style.display = 'none';
+  } else {
+    authMode = 'login';
+    switchAuthMode();
+  }
+}
+
 async function handleAuthFormSubmit(e) {
   e.preventDefault();
   const name = document.getElementById('authName').value;
   const email = document.getElementById('authEmail').value;
+  const otp = document.getElementById('authOtp').value;
   const password = document.getElementById('authPassword').value;
   const errorEl = document.getElementById('authErrorMsg');
   
   errorEl.style.display = 'none';
-  
-  const endpoint = authMode === 'signup' ? '/auth/signup' : '/auth/login';
-  const payload = authMode === 'signup' 
-    ? { name, email, password } 
-    : { email, password };
-    
-  try {
-    const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    
-    const data = await res.json();
-    if (res.ok) {
-      localStorage.setItem('auth_token', data.token);
-      localStorage.setItem('auth_user', JSON.stringify({ name: data.user.name, email: data.user.email }));
-      
-      document.getElementById('navAuthBtn').textContent = `Hi, ${data.user.name.split(' ')[0]}`;
-      closeAuthModal();
-      
-      // Reload portfolio
-      loadPortfolioFromBackend();
-      alert('Authenticated successfully!');
-    } else {
-      errorEl.textContent = data.detail || 'Authentication failed.';
+
+  if (authMode === 'login') {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem('auth_token', data.token);
+        localStorage.setItem('auth_user', JSON.stringify({ name: data.user.name, email: data.user.email }));
+        checkAuthStatus();
+        alert('Logged in successfully!');
+      } else {
+        errorEl.textContent = data.detail || 'Incorrect credentials.';
+        errorEl.style.display = 'block';
+      }
+    } catch (err) {
+      errorEl.textContent = 'Connection error.';
       errorEl.style.display = 'block';
     }
-  } catch (err) {
-    errorEl.textContent = 'Connection error. Please try again.';
-    errorEl.style.display = 'block';
+  } else if (authMode === 'signup') {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert('Registration successful! Please login.');
+        authMode = 'login';
+        switchAuthMode();
+      } else {
+        errorEl.textContent = data.detail || 'Registration failed.';
+        errorEl.style.display = 'block';
+      }
+    } catch (err) {
+      errorEl.textContent = 'Connection error.';
+      errorEl.style.display = 'block';
+    }
+  } else if (authMode === 'forgot') {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        authMode = 'reset';
+        document.getElementById('authModalTitle').textContent = 'Reset Password';
+        document.getElementById('authOtpGroup').style.display = 'block';
+        document.getElementById('authPasswordGroup').style.display = 'block';
+        document.getElementById('authPasswordLabel').textContent = 'Enter New Password';
+        document.getElementById('authSubmitBtn').textContent = 'Reset Password';
+        alert(`OTP has been simulated! The code is: ${data.otp}`);
+      } else {
+        errorEl.textContent = data.detail || 'Email check failed.';
+        errorEl.style.display = 'block';
+      }
+    } catch (err) {
+      errorEl.textContent = 'Connection error.';
+      errorEl.style.display = 'block';
+    }
+  } else if (authMode === 'reset') {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp, new_password: password })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert('Password reset successful! You can now log in.');
+        authMode = 'login';
+        switchAuthMode();
+      } else {
+        errorEl.textContent = data.detail || 'Invalid OTP code.';
+        errorEl.style.display = 'block';
+      }
+    } catch (err) {
+      errorEl.textContent = 'Connection error.';
+      errorEl.style.display = 'block';
+    }
   }
 }
 
 function checkAuthStatus() {
   const token = localStorage.getItem('auth_token');
-  const user = JSON.parse(localStorage.getItem('auth_user') || 'null');
-  if (token && user) {
-    document.getElementById('navAuthBtn').textContent = `Hi, ${user.name.split(' ')[0]}`;
+  const userStr = localStorage.getItem('auth_user');
+  let user = null;
+  try {
+    user = JSON.parse(userStr || 'null');
+  } catch(e) {
+    console.error(e);
+  }
+  
+  const profileWidget = document.getElementById('sidebarUserProfile');
+  const authBtn = document.getElementById('navAuthBtn');
+  const dashboard = document.getElementById('dashboardWrapper');
+  const authModal = document.getElementById('authModal');
+  
+  const nameEl = document.getElementById('sidebarUserName');
+  const avatarEl = document.getElementById('sidebarAvatar');
+  
+  if (token && user && user.name) {
+    // Authenticated: remove blur and hide auth modal overlay
+    if (dashboard) {
+      dashboard.style.filter = 'none';
+      dashboard.style.pointerEvents = 'all';
+    }
+    if (authModal) {
+      authModal.classList.remove('active');
+    }
+    
+    if (profileWidget) profileWidget.style.display = 'flex';
+    if (nameEl) nameEl.textContent = user.name;
+    if (avatarEl) avatarEl.textContent = user.name.charAt(0).toUpperCase();
+    
+    if (authBtn) {
+      authBtn.textContent = 'Log Out';
+      authBtn.style.background = 'rgba(239, 68, 68, 0.12)';
+      authBtn.style.color = '#ef4444';
+      authBtn.style.border = '1px solid rgba(239, 68, 68, 0.25)';
+    }
     loadPortfolioFromBackend();
   } else {
-    document.getElementById('navAuthBtn').textContent = 'Get Started';
+    // Unauthenticated: blur the background and open the auth modal overlay
+    if (dashboard) {
+      dashboard.style.filter = 'blur(12px) brightness(0.4)';
+      dashboard.style.pointerEvents = 'none';
+    }
+    if (authModal) {
+      authModal.classList.add('active');
+    }
+    
+    if (profileWidget) profileWidget.style.display = 'none';
+    if (authBtn) {
+      authBtn.textContent = 'Get Started';
+      authBtn.style.background = 'var(--gradient-main)';
+      authBtn.style.color = '#080c18';
+      authBtn.style.border = 'none';
+    }
   }
 }
 
@@ -1071,12 +1255,10 @@ async function loadDatabaseFromBackend() {
         });
       });
       
-      // Re-trigger visual builds
       buildTicker();
       buildIndices();
       buildGainersLosers();
       buildPicks();
-      runScreener();
     }
   } catch (err) {
     console.error("Error loading funds from backend", err);
@@ -1113,20 +1295,247 @@ async function loadNewsFromBackend() {
     console.error("Error loading news from backend", err);
   }
 }
+// ================================================================
+// AI SALARY PLANNER & SIP CALCULATOR HANDLERS
+// ================================================================
+window.updateSalaryDisplay = function(val) {
+  document.getElementById('salaryValDisplay').textContent = '₹' + parseInt(val).toLocaleString('en-IN');
+}
 
-document.addEventListener('DOMContentLoaded', async () => {
+window.updateSIPAmountDisplay = function(val) {
+  document.getElementById('sipAmountDisplay').textContent = '₹' + parseInt(val).toLocaleString('en-IN');
+  recalculateSIP();
+}
+
+window.updateSIPRateDisplay = function(val) {
+  document.getElementById('sipRateDisplay').textContent = val + '%';
+  recalculateSIP();
+}
+
+window.updateSIPYearsDisplay = function(val) {
+  document.getElementById('sipYearsDisplay').textContent = val + ' Years';
+  recalculateSIP();
+}
+
+function recalculateSIP() {
+  const P = parseFloat(document.getElementById('inputSipAmount').value);
+  const r = parseFloat(document.getElementById('inputSipRate').value);
+  const n = parseFloat(document.getElementById('inputSipYears').value);
+
+  const i = r / 12 / 100;
+  const t = n * 12;
+
+  // Formula: FV = P * [((1 + i)^t - 1) / i] * (1 + i)
+  const totalInvested = P * t;
+  const futureValue = P * ((Math.pow(1 + i, t) - 1) / i) * (1 + i);
+  const estReturns = futureValue - totalInvested;
+
+  document.getElementById('sipInvestedText').textContent = formatINR(totalInvested);
+  document.getElementById('sipReturnsText').textContent = formatINR(Math.max(0, estReturns));
+  document.getElementById('sipTotalText').textContent = formatINR(futureValue);
+}
+
+window.generateAISIPPlan = function() {
+  const salary = parseFloat(document.getElementById('inputSalary').value);
+  const risk = document.getElementById('inputRisk').value;
+  const tenure = document.getElementById('inputTenure').value;
+  const resultPanel = document.getElementById('sipPlanResult');
+
+  // Suggested SIP amount: 20% to 30% of monthly salary
+  const minSip = Math.round(salary * 0.20);
+  const maxSip = Math.round(salary * 0.30);
+
+  // Filter mutual funds from STOCK_DB matching the risk profile
+  let matchingFunds = [];
+  const funds = Object.entries(STOCK_DB);
+
+  if (risk === 'High') {
+    // Equity focus (high return)
+    matchingFunds = funds.filter(([sym, d]) => d.sector === 'Equity' || d.roe > 14.0);
+  } else if (risk === 'Moderate') {
+    // Balanced focus (hybrid)
+    matchingFunds = funds.filter(([sym, d]) => d.sector === 'Energy' || d.sector === 'Equity');
+  } else {
+    // Low risk (debt focus)
+    matchingFunds = funds.filter(([sym, d]) => d.sector === 'Banking');
+  }
+
+  // Pick top 2 recommended funds
+  const recommendations = matchingFunds.slice(0, 2);
+  let recsHTML = recommendations.map(([sym, d]) => {
+    let buyReason = "";
+    if (risk === 'High') {
+      buyReason = `Yeh Equity Fund aapki monthly salary (₹${salary.toLocaleString('en-IN')}) ka growth component generate karne ke liye perfect hai. Kyunki iska target returns high hai, isse long term me compounding ka double power benefit milega aur high risk parameters inflation beat karne me best performance show karenge.`;
+    } else if (risk === 'Moderate') {
+      buyReason = `Aapki moderate salary category ke liye capital balance aur inflation-beating growth dono equal matrix par zaroori hain. Yeh scheme risk and stability ko perfectly distribute karti hai taaki volatility ke time safety bani rahe.`;
+    } else {
+      buyReason = `Safe banking aur debt asset backing hone ke chalte yeh scheme steady monthly growth ensure karti hai. Iska low expense ratio is salary segment me wealth protection ke liye highly recommended hai.`;
+    }
+
+    return `
+      <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; margin-top: 10px;">
+        <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 0.88rem;">
+          <span style="color: var(--accent-green);">${d.name} (${sym})</span>
+          <span>NAV: ${formatINR(d.price)}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-top: 6px; border-bottom: 1px dashed var(--border); padding-bottom: 6px;">
+          <span>Return (3Y): ${d.roe}%</span>
+          <span>Expense Ratio: ${d.pe}%</span>
+        </div>
+        <p style="font-size: 0.78rem; line-height: 1.5; color: var(--text-secondary); margin: 8px 0 0 0; padding: 6px; border-left: 2px solid var(--accent-green); background: rgba(0, 245, 160, 0.02);">
+          <strong>AI Buy Reason:</strong> ${buyReason}
+        </p>
+      </div>
+    `;
+  }).join('');
+
+  if (recommendations.length === 0) {
+    recsHTML = `<p style="font-size: 0.8rem; color: var(--text-muted);">No funds currently match this category. Showing all-weather picks.</p>`;
+  }
+
+  let adviceHinglish = "";
+  if (risk === 'High') {
+    adviceHinglish = `Aapki monthly salary ke hisab se <strong>${formatINR(minSip)} se ${formatINR(maxSip)}</strong> har mahine invest karna best rahega. Aapka risk profile High hai, isliye Equity segment ke Small/Mid cap funds aapke liye highly suitable hain long term returns generate karne ke liye.`;
+  } else if (risk === 'Moderate') {
+    adviceHinglish = `Aapki monthly salary ke hisab se <strong>${formatINR(minSip)} se ${formatINR(maxSip)}</strong> har mahine invest karna highly recommended hai. Moderate risk ke liye hybrid schemes best hain, jo inflation ko beat karne ke sath security bhi dete hain.`;
+  } else {
+    adviceHinglish = `Aapki monthly salary ke hisab se safe buffer ke liye <strong>${formatINR(minSip)} se ${formatINR(maxSip)}</strong> har mahine invest karna safe rahega. Low risk profile ke liye Debt aur liquid funds suitable hain, jo steady aur low-risk passive income provide karte hain.`;
+  }
+
+  resultPanel.innerHTML = `
+    <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--accent-green); display: flex; align-items: center; gap: 6px;">
+      <span>💡</span> AI Investment Advisory Report
+    </h4>
+    <p style="font-size: 0.8rem; line-height: 1.6; margin-top: 8px; color: var(--text-secondary);">
+      ${adviceHinglish}
+    </p>
+    <div style="margin-top: 14px;">
+      <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px;">Recommended Funds:</span>
+      ${recsHTML}
+    </div>
+  `;
+  resultPanel.style.display = 'block';
+}
+
+window.switchSidebarTab = function(tabName) {
+  // Hide all panels
+  document.querySelectorAll('.tab-panel').forEach(panel => {
+    panel.classList.remove('active');
+  });
+  // Deactivate all sidebar navigation buttons
+  document.querySelectorAll('.sidebar-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  
+  // Show target panel
+  const panel = document.getElementById(`panel-${tabName}`);
+  if (panel) panel.classList.add('active');
+  
+  // Activate target button
+  const btn = document.getElementById(`tab-btn-${tabName}`);
+  if (btn) btn.classList.add('active');
+}
+
+window.openSuitabilityModal = function(sym) {
+  const fund = STOCK_DB[sym];
+  if (!fund) return;
+  document.getElementById('suitabilitySym').value = sym;
+  document.getElementById('suitabilityFundName').textContent = fund.name;
+  document.getElementById('suitabilityResult').style.display = 'none';
+  
+  // Prefill suitability form with defaults
+  document.getElementById('suitabilityAge').value = '';
+  document.getElementById('suitabilityHorizon').value = '';
+  
+  document.getElementById('suitabilityModal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+window.closeSuitabilityModal = function() {
+  document.getElementById('suitabilityModal').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+window.calculateAIFundSuitability = function(e) {
+  e.preventDefault();
+  const sym = document.getElementById('suitabilitySym').value;
+  const age = parseInt(document.getElementById('suitabilityAge').value);
+  const horizon = parseInt(document.getElementById('suitabilityHorizon').value);
+  const userRisk = document.getElementById('suitabilityRisk').value;
+  const resultDiv = document.getElementById('suitabilityResult');
+
+  const fund = STOCK_DB[sym];
+  if (!fund) return;
+
+  // Determine fund risk index
+  let fundRisk = 'moderate';
+  if (fund.mcap === 'small') fundRisk = 'low';
+  if (fund.mcap === 'large') fundRisk = 'high';
+
+  let score = 90; // Default base score
+  let advice = "";
+
+  // 1. Age-based deductions
+  if (age > 50 && fundRisk === 'high') {
+    score -= 25;
+    advice += "Aapki age senior bracket me hai aur high-risk equity schemes aapke capital protection goals ko impact kar sakti hain. ";
+  }
+  // 2. Horizon-based deductions
+  if (horizon < 3 && fundRisk === 'high') {
+    score -= 30;
+    advice += "Short-term horizon (under 3 years) me equity mutual funds me high volatility ho sakti hai. Isse aapko temporary losses face karne pad sakte hain. ";
+  } else if (horizon >= 5 && fundRisk === 'high') {
+    score += 8;
+  }
+  // 3. Risk mismatch
+  if (userRisk === 'low' && fundRisk === 'high') {
+    score -= 20;
+    advice += "Aap conservative option chahte hain, par yeh fund highly aggressive equity schemes me invest karta hai. Risk profile mismatch strong hai. ";
+  } else if (userRisk === 'high' && fundRisk === 'low') {
+    score -= 10;
+    advice += "Aap growth potential chahte hain par yeh safe banking debt assets me invest karta hai jo moderate returns generate karega. ";
+  }
+
+  score = Math.max(10, Math.min(100, score));
+
+  let scoreColor = 'var(--accent-green)';
+  if (score < 50) scoreColor = '#ef4444';
+  else if (score < 75) scoreColor = '#eab308';
+
+  if (advice === "") {
+    advice = `Aapki age (${age}), investment horizon (${horizon} years), aur risk appetite (${userRisk}) is mutual fund ke profile se perfect match karte hain. Is scheme me regular SIP invest karna recommended hai.`;
+  } else {
+    advice = "<strong>Warning alert:</strong> " + advice + "AI suggest karta hai ki is scheme ke sath portfolio core sector allocations ko split kar ke balanced ratio maintain karein.";
+  }
+
+  resultDiv.innerHTML = `
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+      <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary);">AI Compatibility Score</span>
+      <span style="color: ${scoreColor}; font-size: 1.25rem; font-weight: 800;">${score}%</span>
+    </div>
+    <p style="font-size: 0.82rem; line-height: 1.6; color: var(--text-secondary); margin: 0;">
+      ${advice}
+    </p>
+  `;
+  resultDiv.style.display = 'block';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   initParticles();
   buildConfidenceBars();
-  buildHeatmap();
   
-  // Load dynamic data from Backend
-  await loadDatabaseFromBackend();
-  await loadNewsFromBackend();
+  // Enforce authentication gate immediately
   checkAuthStatus();
+  switchSidebarTab('markets');
+  
+  // Fetch databases in background
+  loadDatabaseFromBackend().catch(err => console.error(err));
+  loadNewsFromBackend().catch(err => console.error(err));
   
   initHeroChart();
   simulateLiveUpdates();
+  recalculateSIP(); // run initial calculation
 
   setTimeout(initScrollAnimations, 500);
 });
